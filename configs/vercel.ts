@@ -24,10 +24,10 @@ export function vercelOutput(root: string): Plugin {
       await writeFile(
         path.join(fn, ".vc-config.json"),
         JSON.stringify({
-          runtime: "nodejs22.x",
+          runtime: "nodejs24.x",
           handler: "vercel.mjs",
           launcherType: "Nodejs",
-          shouldAddHelpers: true,
+          shouldAddHelpers: false,
           supportsResponseStreaming: true,
         }),
       );
