@@ -1,4 +1,5 @@
 import { useNavigate } from "@gorth/primitive/cores/tanstack/router";
+import { resolveInternalPath } from "@/utils/formatter";
 
 import type {
   AuthSidebarProps,
@@ -12,8 +13,12 @@ import { resetCallerAuthentication } from "@/lib/auth/client";
 export function useNavigation(): { user: UserProps; auth: AuthSidebarProps } {
   const navigate = useNavigate();
   const { data, isPending } = useAuthAccount();
-  function login(returnTo = "/account") {
-    void navigate({ to: "/auth/sign-in", search: { returnTo } });
+  function login(returnTo: unknown = "/account") {
+    // UI callbacks may pass a click/select event instead of a destination.
+    void navigate({
+      to: "/auth/sign-in",
+      search: { returnTo: resolveInternalPath(returnTo) },
+    });
   }
   return {
     user: data?.user

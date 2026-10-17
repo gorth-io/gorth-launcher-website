@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Button } from "@gorth/primitive/custom/button";
 import { authClient } from "@/lib/auth/browser";
 import { resetCallerAuthentication } from "@/lib/auth/client";
+import { resolveInternalPath } from "@/utils/formatter";
 
-export async function signIn(returnTo = "/account") {
+export async function signIn(returnTo: unknown = "/account") {
   const result = await authClient.signIn.social({
     provider: "gorth",
-    callbackURL: returnTo,
+    callbackURL: resolveInternalPath(returnTo),
     errorCallbackURL: "/auth/error",
   });
   if (result.error) throw new Error("Unable to reach Gorth SSO");
