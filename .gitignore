@@ -1,0 +1,13 @@
+node_modules/
+.idea/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+**/.DS_Store
+
+build/
+dist/
+.vite/
+.vercel/
+pkg/

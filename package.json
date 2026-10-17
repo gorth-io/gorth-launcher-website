@@ -1,0 +1,64 @@
+{
+  "name": "@gorth/launcher-website",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "vite dev --port 5504",
+    "build": "vite build",
+    "start": "vite preview --port 5504",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "pnpm exec drizzle-kit generate",
+    "db:push": "pnpm exec drizzle-kit push",
+    "db:migrate": "pnpm exec drizzle-kit migrate",
+    "db:studio": "pnpm exec drizzle-kit studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate-auth": "pnpm exec tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrate-better-auth.mjs"
+  },
+  "dependencies": {
+    "@better-auth/electron": "1.7.10",
+    "@gorth/primitive": "github:gorth-io/base-primitive",
+    "@gorth/principle": "github:gorth-io/base-principle",
+    "@gorth/structure": "github:gorth-io/base-structure",
+    "better-auth": "1.7.10",
+    "drizzle-orm": "1.0.0-rc.4",
+    "hono": "^4.13.13",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "1.0.0-rc.4",
+    "eslint": "^9.39.5",
+    "postcss": "^8.5.30",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vitest": "5.0.5",
+    "vite": "^8.3.4",
+    "@eslint/js": "^9.39.5",
+    "@typescript-eslint/parser": "^8.71.2",
+    "@typescript-eslint/eslint-plugin": "^8.71.2",
+    "globals": "^17.13.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@gorth/primitive",
+      "@gorth/principle",
+      "@gorth/structure",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}
