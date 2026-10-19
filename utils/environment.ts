@@ -22,7 +22,9 @@ export const releaseVersion = process.env.RELEASE_VERSION;
 export const downloadMacosArm64Url = process.env.DOWNLOAD_MACOS_ARM64_URL;
 export const downloadMacosX64Url = process.env.DOWNLOAD_MACOS_X64_URL;
 export const downloadWindowsX64Url = process.env.DOWNLOAD_WINDOWS_X64_URL;
+export const downloadWindowsX64MsiUrl = process.env.DOWNLOAD_WINDOWS_X64_MSI_URL;
 export const downloadLinuxX64Url = process.env.DOWNLOAD_LINUX_X64_URL;
+export const downloadLinuxX64RpmUrl = process.env.DOWNLOAD_LINUX_X64_RPM_URL;
 
 export const oauthAudience = process.env.OAUTH_AUDIENCE;
 export const oauthNotifyAudience = process.env.OAUTH_NOTIFY_AUDIENCE;

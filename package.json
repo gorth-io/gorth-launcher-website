@@ -19,11 +19,11 @@
     "db:migrate-auth": "pnpm exec tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrate-better-auth.mjs"
   },
   "dependencies": {
-    "@better-auth/electron": "1.7.10",
+    "@better-auth/electron": "1.7.11",
     "@gorth/primitive": "github:gorth-io/base-primitive",
     "@gorth/principle": "github:gorth-io/base-principle",
     "@gorth/structure": "github:gorth-io/base-structure",
-    "better-auth": "1.7.10",
+    "better-auth": "1.7.11",
     "drizzle-orm": "1.0.0-rc.4",
     "hono": "^4.13.13",
     "react": "^19.3.1",
@@ -37,7 +37,7 @@
     "@types/react-dom": "^19.3.0",
     "drizzle-kit": "1.0.0-rc.4",
     "eslint": "^9.39.5",
-    "postcss": "^8.5.30",
+    "postcss": "^8.5.31",
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",

@@ -27,6 +27,7 @@ export function vercelOutput(root: string): Plugin {
           runtime: "nodejs24.x",
           handler: "vercel.mjs",
           launcherType: "Nodejs",
+          // Hono consumes the raw body; Vercel helpers previously caused POST timeouts.
           shouldAddHelpers: false,
           supportsResponseStreaming: true,
         }),

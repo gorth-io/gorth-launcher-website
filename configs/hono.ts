@@ -1,13 +1,68 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { readdir, readFile } from "node:fs/promises";
-import { loadEnv, type Plugin } from "vite";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { loadEnv, type Plugin, type ViteDevServer } from "vite";
 import { getRequestListener } from "@gorth/principle/cores/hono/server";
 import {
   applyDevelopmentEnvironment,
   prepareProductionBuild,
 } from "../utils/environment.ts";
 import { isBackendPath } from "../app/routing.ts";
+
+interface HonoMiddlewareOptions {
+  development: boolean;
+  handle: (request: IncomingMessage, response: ServerResponse) => unknown;
+}
+
+// Keep raw request bodies intact. Dev and preview differ only in loading and
+// dev-only headers/error responses; API routing and SPA fallback stay together.
+function installHonoMiddleware(
+  server: Pick<ViteDevServer, "config" | "middlewares">,
+  { development, handle }: HonoMiddlewareOptions,
+) {
+  applyDevelopmentEnvironment(
+    loadEnv(server.config.mode, server.config.envDir, ""),
+  );
+  server.middlewares.use(async (request, response, next) => {
+    try {
+      const pathname = new URL(request.url || "/", "http://localhost").pathname;
+      if (development) {
+        response.setHeader("X-Content-Type-Options", "nosniff");
+        response.setHeader(
+          "Referrer-Policy",
+          pathname.startsWith("/auth") ? "no-referrer" : "same-origin",
+        );
+      }
+      if (isBackendPath(pathname)) {
+        await handle(request, response);
+        return;
+      }
+      const viteRequest =
+        development &&
+        (pathname.startsWith("/@") || pathname.startsWith("/node_modules/"));
+      if (
+        ["GET", "HEAD"].includes(request.method || "") &&
+        !viteRequest &&
+        !path.extname(pathname)
+      ) {
+        response.setHeader("Cache-Control", "no-store");
+        request.url = "/public/index.html";
+      }
+      next();
+    } catch {
+      if (!response.headersSent) {
+        response.statusCode = 500;
+        if (development) {
+          response.setHeader("Content-Type", "application/json");
+          response.end(JSON.stringify({ error: "Internal Server Error" }));
+          return;
+        }
+      }
+      response.end();
+    }
+  });
+}
 
 export function sameOriginHono(root: string): Plugin {
   return {
@@ -66,73 +121,24 @@ export function sameOriginHono(root: string): Plugin {
       if (id === "\0gorth-server-only") return "export {};";
     },
     async configurePreviewServer(server) {
+      // Preview loads the built handler, never the standalone Node listener.
       applyDevelopmentEnvironment(
         loadEnv(server.config.mode, server.config.envDir, ""),
       );
-      // Load the compiled API, not source code or the standalone listener.
-      const { default: handler } = await import(
+      const { default: handle } = await import(
         /* @vite-ignore */ pathToFileURL(
           path.join(root, "dist/server/vercel.mjs"),
         ).href
       );
-      server.middlewares.use(async (request, response, next) => {
-        try {
-          const pathname = new URL(request.url || "/", "http://localhost")
-            .pathname;
-          if (isBackendPath(pathname)) {
-            await handler(request, response);
-            return;
-          }
-          if (
-            ["GET", "HEAD"].includes(request.method || "") &&
-            !path.extname(pathname)
-          ) {
-            response.setHeader("Cache-Control", "no-store");
-            request.url = "/public/index.html";
-          }
-          next();
-        } catch {
-          if (!response.headersSent) response.statusCode = 500;
-          response.end();
-        }
-      });
+      installHonoMiddleware(server, { development: false, handle });
     },
     configureServer(server) {
-      applyDevelopmentEnvironment(
-        loadEnv(server.config.mode, server.config.envDir, ""),
-      );
-      server.middlewares.use(async (request, response, next) => {
-        try {
-          const pathname = new URL(request.url || "/", "http://localhost")
-            .pathname;
-          response.setHeader("X-Content-Type-Options", "nosniff");
-          response.setHeader(
-            "Referrer-Policy",
-            pathname.startsWith("/auth") ? "no-referrer" : "same-origin",
-          );
-          if (isBackendPath(pathname)) {
-            const module = await server.ssrLoadModule("/app/server.ts");
-            await getRequestListener(module.default.fetch)(request, response);
-            return;
-          }
-          // Leave Vite/HMR, module and static-asset URLs to Vite itself.
-          if (
-            ["GET", "HEAD"].includes(request.method || "") &&
-            !pathname.startsWith("/@") &&
-            !pathname.startsWith("/node_modules/") &&
-            !path.extname(pathname)
-          ) {
-            request.url = "/public/index.html";
-            response.setHeader("Cache-Control", "no-store");
-          }
-          next();
-        } catch {
-          if (!response.headersSent) {
-            response.statusCode = 500;
-            response.setHeader("Content-Type", "application/json");
-            response.end(JSON.stringify({ error: "Internal Server Error" }));
-          } else response.end();
-        }
+      installHonoMiddleware(server, {
+        development: true,
+        async handle(request, response) {
+          const module = await server.ssrLoadModule("/app/server.ts");
+          await getRequestListener(module.default.fetch)(request, response);
+        },
       });
     },
     transform(_code: string, id: string, options?: { ssr?: boolean }) {

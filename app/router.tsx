@@ -9,7 +9,8 @@ import {
 import RootLayout from "@/pages/layout";
 import DashboardLayout from "@/pages/(dashboard)/layout";
 import NotFoundPage from "@/pages/not-found";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
+import { SuspenseProgress } from "@/components/suspense-progress";
 import { useLocation } from "@gorth/primitive/cores/tanstack/router";
 import { product } from "@/utils/constant";
 const Page0 = lazyRouteComponent(
@@ -64,6 +65,9 @@ function Root() {
   }, [pathname]);
   return (
     <RootLayout>
+      <Suspense fallback={null}>
+        <SuspenseProgress />
+      </Suspense>
       <Outlet />
     </RootLayout>
   );

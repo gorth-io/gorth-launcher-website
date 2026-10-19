@@ -9,8 +9,13 @@ import { DirectionProvider } from "@gorth/primitive/providers/direction";
 import { LayoutProvider } from "@gorth/primitive/providers/layout";
 import { TooltipProvider } from "@gorth/primitive/default/tooltip";
 import { Toaster } from "@gorth/primitive/custom/toast";
+import {
+  ProgressProvider,
+  Progress,
+  Bar,
+} from "@gorth/primitive/cores/progress/react";
 
-// Composes the original Primitive providers without Next navigation/progress.
+// Compose Primitive's providers using the framework-independent progress API.
 export function ApplicationProvider({ children }: PropsWithChildren) {
   const [queryClient] = useState(
     () =>
@@ -24,9 +29,18 @@ export function ApplicationProvider({ children }: PropsWithChildren) {
         <FontProvider>
           <DirectionProvider>
             <LayoutProvider>
-              <Toaster>
-                <TooltipProvider>{children}</TooltipProvider>
-              </Toaster>
+              <ProgressProvider
+                height="2px"
+                options={{ showSpinner: false, template: null }}
+                shallowRouting
+              >
+                <Progress>
+                  <Bar className="bg-primary!" />
+                </Progress>
+                <Toaster>
+                  <TooltipProvider>{children}</TooltipProvider>
+                </Toaster>
+              </ProgressProvider>
             </LayoutProvider>
           </DirectionProvider>
         </FontProvider>

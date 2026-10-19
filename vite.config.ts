@@ -5,21 +5,19 @@ import { sameOriginHono } from "./configs/hono.ts";
 import { vercelOutput } from "./configs/vercel.ts";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const localServer = {
+  host: "127.0.0.1",
+  port: 5504,
+  strictPort: true,
+  cors: false,
+} as const;
 export default defineConfig({
-  preview: { host: "127.0.0.1", port: 5504, strictPort: true, cors: false },
+  preview: localServer,
   resolve: { alias: { "@": root } },
   server: {
-    host: "127.0.0.1",
-    port: 5504,
-    strictPort: true,
-    cors: false,
+    ...localServer,
     watch: {
-      ignored: [
-        "**/pkg/**",
-        "**/.vite/**",
-        "**/dist/**",
-        "**/.vercel/**"
-      ],
+      ignored: ["**/pkg/**", "**/.vite/**", "**/dist/**", "**/.vercel/**"],
     },
   },
   // Native Vite application builder builds every declared environment.

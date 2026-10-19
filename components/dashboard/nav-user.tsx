@@ -124,45 +124,51 @@ export function NavUserDropdown({
       <DropdownMenuGroup>
         <NavAccount user={user} />
       </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        {auth.authenticated
-          ? nav.main.map((item) => (
+      {auth.authenticated && nav.main.length > 0 && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            {nav.main.map((item) => (
               <NavDropdownItem
                 key={item.url}
                 icon={item.icon}
                 title={item.title}
                 link={item.url}
               />
-            ))
-          : null}
-      </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        {auth.authenticated ? (
-          <NavDropdownItem
-            icon={LogOut}
-            title="Sign out"
-            action={auth.logout}
-          />
-        ) : (
-          nav.secondary.map((item) => {
-            const isSignIn = item.url.endsWith("/sign-in");
-            const isSignUp = item.url.endsWith("/sign-up");
-            return (
+            ))}
+          </DropdownMenuGroup>
+        </>
+      )}
+      {(auth.authenticated || nav.secondary.length > 0) && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            {auth.authenticated ? (
               <NavDropdownItem
-                key={item.url}
-                icon={item.icon}
-                title={item.title}
-                action={
-                  isSignIn ? auth.login : isSignUp ? auth.register : undefined
-                }
-                link={!isSignIn && !isSignUp ? item.url : undefined}
+                icon={LogOut}
+                title="Sign out"
+                action={auth.logout}
               />
-            );
-          })
-        )}
-      </DropdownMenuGroup>
+            ) : (
+              nav.secondary.map((item) => {
+                const isSignIn = item.url.endsWith("/sign-in");
+                const isSignUp = item.url.endsWith("/sign-up");
+                return (
+                  <NavDropdownItem
+                    key={item.url}
+                    icon={item.icon}
+                    title={item.title}
+                    action={
+                      isSignIn ? auth.login : isSignUp ? auth.register : undefined
+                    }
+                    link={!isSignIn && !isSignUp ? item.url : undefined}
+                  />
+                );
+              })
+            )}
+          </DropdownMenuGroup>
+        </>
+      )}
     </>
   );
 }

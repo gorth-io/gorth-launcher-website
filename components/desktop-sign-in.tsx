@@ -2,16 +2,29 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@gorth/primitive/custom/button";
 import { authClient } from "@/lib/auth/browser";
 import { electronClientId } from "@/lib/auth/contract";
+import { oauthCookiePrefix } from "@/utils/client-environment";
+import { startDesktopHandoff } from "@/lib/auth/desktop-handoff";
 
 export function DesktopSignIn({ complete = false }: { complete?: boolean }) {
   const started = useRef(false);
   const [error, setError] = useState("");
+  const [desktopURL, setDesktopURL] = useState("");
   useEffect(() => {
     if (complete) {
-      // The official proxy reads the short-lived Electron authorization cookie;
-      // it never sends OAuth access/refresh tokens to this component.
-      const timer = authClient.ensureElectronRedirect({ timeout: 120_000 });
-      return () => clearInterval(timer);
+      return startDesktopHandoff({
+        readCode: () => authClient.electron.getAuthorizationCode(),
+        clearCode: () => {
+          document.cookie =
+            oauthCookiePrefix +
+            "." +
+            electronClientId +
+            "=; Max-Age=0; Path=/; SameSite=Lax" +
+            (window.location.protocol === "https:" ? "; Secure" : "");
+        },
+        onReady: setDesktopURL,
+        onError: setError,
+        open: (url) => window.location.replace(url),
+      });
     }
     if (started.current) return;
     const params = new URLSearchParams(window.location.search);
@@ -60,10 +73,9 @@ export function DesktopSignIn({ complete = false }: { complete?: boolean }) {
       </p>
       {complete && (
         <Button
-          onClick={() => {
-            const timer = authClient.ensureElectronRedirect();
-            setTimeout(() => clearInterval(timer), 10_000);
-          }}
+          nativeButton={false}
+          disabled={!desktopURL}
+          render={<a href={desktopURL || undefined} />}
         >
           Open desktop app
         </Button>

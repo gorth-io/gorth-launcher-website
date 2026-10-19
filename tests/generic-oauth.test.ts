@@ -10,7 +10,7 @@ import {
 } from "@gorth/structure/cores/jose";
 import { gorthProvider, validateGorthUser } from "@/lib/auth/provider";
 
-const app = "http://localhost:5504";
+let app = "http://localhost:5504";
 const sso = "http://localhost:3000";
 const issuer = sso + "/auth";
 const clientId = "gorth-test-website";
@@ -119,6 +119,7 @@ async function current() {
 }
 
 beforeEach(async () => {
+  app = "http://localhost:5504";
   cookies = new Map();
   subject = "sso-sub-first";
   badNonce = false;
@@ -320,75 +321,83 @@ describe("native Gorth Generic OAuth", () => {
   });
 });
 
-it("completes desktop Generic OAuth with official PKCE transfer and keeps web/SSO sessions on desktop logout", async () => {
-  const verifier = randomBytes(32).toString("base64url");
-  const nativeState = randomBytes(16).toString("base64url");
-  const query = new URLSearchParams({
-    client_id: electronClientId,
-    state: nativeState,
-    code_challenge: createHash("sha256").update(verifier).digest("base64url"),
-  });
-  const startResponse = await request("sign-in/social?" + query, {
-    provider: "gorth",
-    callbackURL: "/auth/desktop/complete",
-  });
-  expect(startResponse.status).toBe(200);
-  const authorize = new URL((await startResponse.json()).url);
-  nonce = authorize.searchParams.get("nonce")!;
-  expect(authorize.searchParams.get("prompt")).toBe("select_account");
-  const response = await finish(authorize);
-  expect(response.headers.get("location")).toContain("/auth/desktop/complete");
-  const redirect = cookies.get("gorth." + electronClientId);
-  expect(redirect).toBeTruthy();
-  const payload = JSON.parse(
-    Buffer.from(decodeURIComponent(redirect!), "base64url").toString(),
-  );
-  expect(payload.state).toBe(nativeState);
-  const body = {
-    token: payload.identifier,
-    state: nativeState,
-    code_verifier: verifier,
-  };
-  const nativeResponse = await auth.handler(
-    new Request(app + "/auth/electron/token", {
-      method: "POST",
-      headers: {
-        Origin: electronScheme + ":/",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }),
-  );
-  expect(nativeResponse.status).toBe(200);
-  const nativeCookie = nativeResponse.headers
-    .getSetCookie()
-    .map((value) => value.split(";")[0])
-    .join("; ");
-  expect(nativeCookie).toContain("session_token");
-  const nativeUser = await nativeResponse.json();
-  expect(nativeUser.user.externalUserId).toBe(subject);
-  const replay = await auth.handler(
-    new Request(app + "/auth/electron/token", {
-      method: "POST",
-      headers: {
-        Origin: electronScheme + ":/",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }),
-  );
-  expect(replay.status).toBe(404);
-  const signOut = await auth.handler(
-    new Request(app + "/auth/sign-out", {
-      method: "POST",
-      headers: {
-        Origin: electronScheme + ":/",
-        "Content-Type": "application/json",
-        Cookie: nativeCookie,
-      },
-      body: "{}",
-    }),
-  );
-  expect(signOut.status).toBe(200);
-  expect((await current()).user.externalUserId).toBe(subject);
-});
+it.each(["http://localhost:5504", "https://gorth-launcher.vercel.app"])(
+  "completes desktop Generic OAuth with official PKCE transfer on %s",
+  async (origin) => {
+    app = origin;
+    auth = fixture();
+    await auth.$context;
+    const verifier = randomBytes(32).toString("base64url");
+    const nativeState = randomBytes(16).toString("base64url");
+    const query = new URLSearchParams({
+      client_id: electronClientId,
+      state: nativeState,
+      code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+    });
+    const startResponse = await request("sign-in/social?" + query, {
+      provider: "gorth",
+      callbackURL: "/auth/desktop/complete",
+    });
+    expect(startResponse.status).toBe(200);
+    const authorize = new URL((await startResponse.json()).url);
+    nonce = authorize.searchParams.get("nonce")!;
+    expect(authorize.searchParams.get("prompt")).toBe("select_account");
+    const response = await finish(authorize);
+    expect(response.headers.get("location")).toContain(
+      "/auth/desktop/complete",
+    );
+    const redirect = cookies.get("gorth." + electronClientId);
+    expect(redirect).toBeTruthy();
+    const payload = JSON.parse(
+      Buffer.from(decodeURIComponent(redirect!), "base64url").toString(),
+    );
+    expect(payload.state).toBe(nativeState);
+    const body = {
+      token: payload.identifier,
+      state: nativeState,
+      code_verifier: verifier,
+    };
+    const nativeResponse = await auth.handler(
+      new Request(app + "/auth/electron/token", {
+        method: "POST",
+        headers: {
+          Origin: electronScheme + ":/",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }),
+    );
+    expect(nativeResponse.status).toBe(200);
+    const nativeCookie = nativeResponse.headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+    expect(nativeCookie).toContain("session_token");
+    const nativeUser = await nativeResponse.json();
+    expect(nativeUser.user.externalUserId).toBe(subject);
+    const replay = await auth.handler(
+      new Request(app + "/auth/electron/token", {
+        method: "POST",
+        headers: {
+          Origin: electronScheme + ":/",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }),
+    );
+    expect(replay.status).toBe(404);
+    const signOut = await auth.handler(
+      new Request(app + "/auth/sign-out", {
+        method: "POST",
+        headers: {
+          Origin: electronScheme + ":/",
+          "Content-Type": "application/json",
+          Cookie: nativeCookie,
+        },
+        body: "{}",
+      }),
+    );
+    expect(signOut.status).toBe(200);
+    expect((await current()).user.externalUserId).toBe(subject);
+  },
+);
